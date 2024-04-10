@@ -2,8 +2,9 @@
 
 using Godot;
 using System;
+using System.Diagnostics;
 
-namespace TurboTartine.Godot.ReparentScene
+namespace TurboTartine.Godot.ReparentScenePlugin
 {
     [Tool]
     public partial class Plugin : EditorPlugin
@@ -27,9 +28,28 @@ namespace TurboTartine.Godot.ReparentScene
             if (id == 0) OpenReparentSceneDialog();
         }
 
+        EditorFileDialog selectSceneToReparentdialog;
         private void OpenReparentSceneDialog()
         {
-            GD.Print("OpenReparentSceneDialog");
+            selectSceneToReparentdialog = new EditorFileDialog();
+            selectSceneToReparentdialog.Title = "Choose a scene to reparent";
+            selectSceneToReparentdialog.Filters = new string[] { "*.tscn" };
+            selectSceneToReparentdialog.FileMode = EditorFileDialog.FileModeEnum.OpenFile;
+            selectSceneToReparentdialog.FileSelected += OnSceneToReparentSelected;
+
+            EditorInterface.Singleton.PopupDialogCentered(selectSceneToReparentdialog, new Vector2I(500, 500));
+        }
+
+        private void OnSceneToReparentSelected(string path)
+        {
+            ReparentSceneDialog dialog = new ReparentSceneDialog(path);
+            EditorInterface.Singleton.PopupDialogCentered(dialog, new Vector2I(500, 500));
+        }
+
+        public override void _ExitTree()
+        {
+            pluginMenu.IdPressed -= OnPluginMenuItemPressed;
+            RemoveToolMenuItem(TOOL_MENU_ITEM_NAME);
         }
     }
 }
