@@ -17,12 +17,19 @@ namespace TurboTartine.Godot.ReparentScenePlugin
         private Dictionary<Node, TreeItem> treeItemsLookupTable = new Dictionary<Node, TreeItem>();
         private Dictionary<TreeItem, Node> nodesLookupTable = new Dictionary<TreeItem, Node>();
         private List<Node> parentSceneNodes = new List<Node>();
+        private List<Node> instancedSceneNodes = new List<Node>();
 
         public ReparentSceneDialog(string scenePath) : base()
         {
-            //Debugger.Launch();
             boundScene = ResourceLoader.Load<PackedScene>(scenePath);
-            boundSceneRoot = boundScene.Instantiate<Node>();
+            SceneState state = boundScene.GetState();
+            for (int i = 0; i < state.GetNodeCount(); i++)
+            {
+                PackedScene subScene = state.GetNodeInstance(i);
+                GD.Print(subScene);
+            }
+
+            boundSceneRoot = boundScene.Instantiate<Node>(PackedScene.GenEditState.Instance);
         }
 
         public override void _EnterTree()
@@ -44,13 +51,22 @@ namespace TurboTartine.Godot.ReparentScenePlugin
                 if (parentNode == null) parentSceneNodes.Add(node);
 
                 string name = node.Name;
+                bool isInstance = node.GetSceneInstanceLoadPlaceholder();
                 TreeItem parentItem = parentNode != null ? treeItemsLookupTable[parentNode] : null;
 
                 TreeItem treeItem = sceneTree.CreateItem(parentItem);
                 treeItem.SetText(0, name);
-                
                 treeItem.SetIcon(0, GetThemeIcon(IconNameFromNode(node), "EditorIcons"));
-                //treeItem.AddButton(0, GetThemeIcon("ColorPick", "EditorIcons"));
+                if (isInstance)
+                {
+                    treeItem.SetText(1, "Instanced");
+                    treeItem.SetIcon(1, GetThemeIcon("PackedScene", "EditorIcons"));
+                    instancedSceneNodes.Add(node);
+                }
+                else
+                {
+                    treeItem.SetText(1, "Not Instanced");
+                }
 
                 treeItemsLookupTable.Add(node, treeItem);
                 nodesLookupTable.Add(treeItem, node);
