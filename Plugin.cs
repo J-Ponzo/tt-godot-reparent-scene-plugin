@@ -10,7 +10,7 @@ namespace TurboTartine.Godot.ReparentScenePlugin
     public partial class Plugin : EditorPlugin
     {
         private const string TOOL_MENU_ITEM_NAME = "TT ReparentScene";
-        private const string CREATE_ENTITY_MENU_ITEM_NAME = "Open";
+        private const string CREATE_ENTITY_MENU_ITEM_NAME = "Reparent";
 
         private PopupMenu pluginMenu;
 

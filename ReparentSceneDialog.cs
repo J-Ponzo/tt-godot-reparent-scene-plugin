@@ -18,11 +18,15 @@ namespace TurboTartine.Godot.ReparentScenePlugin
         public NodePath ownerPath;
         public NodePath path;
         public Dictionary<StringName, Variant> porperties;
+        public StringName type;
         public bool isInstancePlaceHolder;
     }
 
     public partial class ReparentSceneDialog : ConfirmationDialog
     {
+        private Color yellowColor = Color.FromString("yellow", new Color());
+        private Color whiteColor = Color.FromString("white", new Color());
+
         private PackedScene dialagContentPanelScn = GD.Load<PackedScene>("res://addons/tt-godot-reparent-scene-plugin/ReparentSceneDialogContent.tscn");
         private PackedScene boundScene;
         private Node boundSceneRoot;
@@ -35,6 +39,7 @@ namespace TurboTartine.Godot.ReparentScenePlugin
 
         public ReparentSceneDialog(string scenePath) : base()
         {
+            //Debugger.Launch();
             boundScene = ResourceLoader.Load<PackedScene>(scenePath);
             SceneState state = boundScene.GetState();
             nodeInfos = new NodeInfo[state.GetNodeCount()];
@@ -55,6 +60,7 @@ namespace TurboTartine.Godot.ReparentScenePlugin
                     nodeInfo.porperties.Add(state.GetNodePropertyName(i, j), state.GetNodePropertyValue(i, j));
                 }
 
+                nodeInfo.type = state.GetNodeType(i);
                 nodeInfo.isInstancePlaceHolder = state.IsNodeInstancePlaceholder(i);
 
                 nodeInfos[i] = nodeInfo;
@@ -71,7 +77,10 @@ namespace TurboTartine.Godot.ReparentScenePlugin
             
             Panel panel = dialagContentPanelScn.Instantiate<Panel>();
 
-            sceneTree = panel.GetNode<Tree>("%SceneTree"); 
+            sceneTree = panel.GetNode<Tree>("%SceneTree");
+            sceneTree.SetColumnExpand(0, true);
+            sceneTree.SetColumnExpand(1, false);
+            sceneTree.SetColumnExpand(2, false);
             sceneTree.ItemSelected += OnItemSelected;
 
             foreach (NodeInfo nodeInfo in nodeInfos)
@@ -82,8 +91,9 @@ namespace TurboTartine.Godot.ReparentScenePlugin
                 TreeItem parentItem = parentNodeInfo != null ? treeItemsLookupTable[parentNodeInfo] : null;
                 TreeItem item = sceneTree.CreateItem(parentItem);
                 item.SetText(0, nodeInfo.name);
-                item.SetIcon(0, GetThemeIcon(IconNameFromNode(nodeInfo.GetType()), "EditorIcons"));
-                if (nodeInfo.instance != null) item.SetIcon(1, GetThemeIcon("PackedScene", "EditorIcons"));
+                item.SetIcon(0, GetThemeIcon(IconNameFromNode(nodeInfo.type), "EditorIcons"));
+                //if (nodeInfo.instance != null) item.SetIcon(1, GetThemeIcon("PackedScene", "EditorIcons"));
+                item.SetIconModulate(2, yellowColor);
 
                 treeItemsLookupTable.Add(nodeInfo, item);
                 nodeInfosLookupTable.Add(item, nodeInfo);
@@ -165,11 +175,15 @@ namespace TurboTartine.Godot.ReparentScenePlugin
             {
                 if (parentSceneNodeInfos.Contains(nodeInfosLookupTable[item]))
                 {
-                    item.SetCustomColor(0, Color.FromString("yellow", new Color()));
+                    item.SetCustomColor(0, yellowColor);
+                    item.SetIcon(2, GetThemeIcon("Node", "EditorIcons"));
+                    item.SetIconModulate(1, yellowColor);
                 }
                 else
                 {
-                    item.SetCustomColor(0, Color.FromString("white", new Color()));
+                    item.SetCustomColor(0, whiteColor);
+                    item.SetIcon(2, null);
+                    item.SetIconModulate(1, whiteColor);
                 }
             }
         }
@@ -182,7 +196,6 @@ namespace TurboTartine.Godot.ReparentScenePlugin
 
         private void ToggleNode(NodeInfo nodeInfo)
         {
-            Debugger.Launch();
             List<NodeInfo> ancestors = FindAncestorsNodeInfo(nodeInfo);
             List<NodeInfo> desendants = FindDescendantsNodeInfo(nodeInfo);
 
@@ -202,11 +215,10 @@ namespace TurboTartine.Godot.ReparentScenePlugin
             UpdateTree();
         }
 
-        private string IconNameFromNode(Type type)
+        private string IconNameFromNode(string type)
         {
-            string iconName = type.ToString();
-            iconName = iconName.Replace("Godot.", "");
-            return iconName;
+            if (type == "") return "PackedScene";
+            return type.Replace("Godot.", "");
         }
 
         private void ReparentScene()
