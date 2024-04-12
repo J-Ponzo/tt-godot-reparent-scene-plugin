@@ -29,9 +29,6 @@ namespace TurboTartine.Godot.ReparentScenePlugin
         private Tree sceneTree;
         private NodeInfo[] nodeInfos;
 
-        //private Dictionary<Node, TreeItem> treeItemsLookupTable = new Dictionary<Node, TreeItem>();
-        //private Dictionary<TreeItem, Node> nodesLookupTable = new Dictionary<TreeItem, Node>();
-        //private List<Node> parentSceneNodes = new List<Node>();
         private Dictionary<NodeInfo, TreeItem> treeItemsLookupTable = new Dictionary<NodeInfo, TreeItem>();
         private Dictionary<TreeItem, NodeInfo> nodeInfosLookupTable = new Dictionary<TreeItem, NodeInfo>();
         private List<NodeInfo> parentSceneNodeInfos = new List<NodeInfo>();
@@ -76,12 +73,11 @@ namespace TurboTartine.Godot.ReparentScenePlugin
 
             sceneTree = panel.GetNode<Tree>("%SceneTree"); 
             sceneTree.ItemSelected += OnItemSelected;
-            //sceneTree.ButtonClicked += OnTreeItemClicked;
 
-            foreach(NodeInfo nodeInfo in nodeInfos)
+            foreach (NodeInfo nodeInfo in nodeInfos)
             {
                 NodeInfo parentNodeInfo = FindParentNodeInfo(nodeInfo);
-                if (parentNodeInfo == null) parentSceneNodeInfos.Add(parentNodeInfo);
+                if (parentNodeInfo == null) parentSceneNodeInfos.Add(nodeInfo);
 
                 TreeItem parentItem = parentNodeInfo != null ? treeItemsLookupTable[parentNodeInfo] : null;
                 TreeItem item = sceneTree.CreateItem(parentItem);
@@ -92,34 +88,6 @@ namespace TurboTartine.Godot.ReparentScenePlugin
                 treeItemsLookupTable.Add(nodeInfo, item);
                 nodeInfosLookupTable.Add(item, nodeInfo);
             }
-            //List<Node> nodes = FlattenBoundSceneTree(boundSceneRoot);
-
-            //foreach (Node node in nodes)
-            //{
-            //    Node parentNode = node.GetParent();
-            //    if (parentNode == null) parentSceneNodes.Add(node);
-
-            //    string name = node.Name;
-            //    bool isInstance = node.GetSceneInstanceLoadPlaceholder();
-            //    TreeItem parentItem = parentNode != null ? treeItemsLookupTable[parentNode] : null;
-
-            //    TreeItem treeItem = sceneTree.CreateItem(parentItem);
-            //    treeItem.SetText(0, name);
-            //    treeItem.SetIcon(0, GetThemeIcon(IconNameFromNode(node), "EditorIcons"));
-            //    if (isInstance)
-            //    {
-            //        treeItem.SetText(1, "Instanced");
-            //        treeItem.SetIcon(1, GetThemeIcon("PackedScene", "EditorIcons"));
-            //        instancedSceneNodes.Add(node);
-            //    }
-            //    else
-            //    {
-            //        treeItem.SetText(1, "Not Instanced");
-            //    }
-
-            //    treeItemsLookupTable.Add(node, treeItem);
-            //    nodesLookupTable.Add(treeItem, node);
-            //}
 
             UpdateTree();
 
@@ -131,8 +99,11 @@ namespace TurboTartine.Godot.ReparentScenePlugin
             int nameCount = nodeInfo.path.GetNameCount();
             if (nameCount == 1) return null;
 
-            StringName parentName = nodeInfo.path.GetName(nameCount - 2);
-            return FindNodeInfoByName(parentName);
+            string pathString = "";
+            for (int i = 0; i < nameCount - 1; i++) pathString += nodeInfo.path.GetName(i) + "/";
+            pathString = pathString.Remove(pathString.Length - 1);
+
+            return FindNodeInfoByPath(pathString);
         }
 
         private List<NodeInfo> FindAncestorsNodeInfo(NodeInfo nodeInfo)
@@ -142,9 +113,12 @@ namespace TurboTartine.Godot.ReparentScenePlugin
             int nameCount = nodeInfo.path.GetNameCount();
             if (nameCount == 1) return ancestors;
 
-            for (int i = nameCount - 2; i > -1; i--)
+            string pathString = "";
+            for (int i = 0; i < nameCount - 1; i++)
             {
-                ancestors.Add(FindNodeInfoByName(nodeInfo.path.GetName(i)));
+                pathString += nodeInfo.path.GetName(i);
+                ancestors.Insert(0, FindNodeInfoByPath(pathString));
+                pathString += "/";
             }
 
             return ancestors;
@@ -175,34 +149,14 @@ namespace TurboTartine.Godot.ReparentScenePlugin
             return false;
         }
 
-        private NodeInfo FindNodeInfoByName(StringName name)
+        private NodeInfo FindNodeInfoByPath(string stringPath)
         {
-            foreach(NodeInfo nodeInfo in nodeInfos)
+            foreach (NodeInfo nodeInfo in nodeInfos)
             {
-                if (nodeInfo.name == name) return nodeInfo;
+                if (nodeInfo.path.GetConcatenatedNames() == stringPath) return nodeInfo;
             }
 
             return null;
-        }
-
-        private void OnItemSelected()
-        {
-            NodeInfo nodeInfo = nodeInfosLookupTable[sceneTree.GetSelected()];
-            List<NodeInfo> ancestors = FindAncestorsNodeInfo(nodeInfo);
-            List<NodeInfo> desendants = FindDescendantsNodeInfo(nodeInfo);
-
-            foreach (NodeInfo ancestor in ancestors)
-            {
-                if (!parentSceneNodeInfos.Contains(ancestor))
-                    parentSceneNodeInfos.Add(ancestor);
-            }
-
-            foreach (NodeInfo descendant in desendants)
-            {
-                parentSceneNodeInfos.Remove(descendant);
-            }
-
-            UpdateTree();
         }
 
         private void UpdateTree()
@@ -220,47 +174,39 @@ namespace TurboTartine.Godot.ReparentScenePlugin
             }
         }
 
-        //private void OnTreeItemClicked(TreeItem item, long column, long id, long mouseButtonIndex)
-        //{
-        //    NodeInfo node = nodeInfosLookupTable[item];
-        //    List<Node> ancestors = NodeUtils.FindNodesInParents<Node>(node, true);
-        //    List<Node> desendants = NodeUtils.FindNodesInChildren<Node>(node, false);
+        private void OnItemSelected()
+        {
+            NodeInfo nodeInfo = nodeInfosLookupTable[sceneTree.GetSelected()];
+            ToggleNode(nodeInfo);
+        }
 
-        //    foreach (Node ancestor in ancestors)
-        //    {
-        //        if (!parentSceneNodeInfos.Contains(ancestor))
-        //            parentSceneNodeInfos.Add(ancestor);
-        //    }
+        private void ToggleNode(NodeInfo nodeInfo)
+        {
+            Debugger.Launch();
+            List<NodeInfo> ancestors = FindAncestorsNodeInfo(nodeInfo);
+            List<NodeInfo> desendants = FindDescendantsNodeInfo(nodeInfo);
 
-        //    foreach (Node descendant in desendants)
-        //    {
-        //        parentSceneNodeInfos.Remove(descendant);
-        //    }
+            foreach (NodeInfo ancestor in ancestors)
+            {
+                if (!parentSceneNodeInfos.Contains(ancestor))
+                    parentSceneNodeInfos.Add(ancestor);
+            }
 
-        //    UpdateTree();
-        //}
+            if (!parentSceneNodeInfos.Contains(nodeInfo)) parentSceneNodeInfos.Add(nodeInfo);
 
-        //private Texture2D GetThemeIcon(StringName name, StringName themeType = null)
-        //{
-        //    return EditorInterface.Singleton.GetBaseControl().GetThemeIcon(name, themeType);
-        //}
+            foreach (NodeInfo descendant in desendants)
+            {
+                parentSceneNodeInfos.Remove(descendant);
+            }
+
+            UpdateTree();
+        }
 
         private string IconNameFromNode(Type type)
         {
             string iconName = type.ToString();
             iconName = iconName.Replace("Godot.", "");
             return iconName;
-        }
-
-        private List<Node> FlattenBoundSceneTree(Node node)
-        {
-            List<Node> flattenTree = new List<Node>();
-            flattenTree.Add(node);
-            for (int i = 0; i < node.GetChildCount(); i++)
-            {
-                flattenTree.AddRange(FlattenBoundSceneTree(node.GetChild(i)));
-            }
-            return flattenTree;
         }
 
         private void ReparentScene()
