@@ -223,7 +223,23 @@ namespace TurboTartine.Godot.ReparentScenePlugin
 
         private void ReparentScene()
         {
-            GD.Print("Reparent");
+            string pathNoExtention = boundScene.ResourcePath.GetBaseName();
+            string extention = boundScene.ResourcePath.GetExtension();
+
+            string backupScenePath = pathNoExtention + "_BACKUP." + extention;
+            ResourceSaver.Singleton.Save(boundScene, backupScenePath);
+
+            string parentScenePath = pathNoExtention + "_Parent." + extention;
+            Node parentSceneRoot = boundScene.Instantiate(PackedScene.GenEditState.Main);
+            PackedScene parentScenePacked = new PackedScene();
+            parentScenePacked.Pack(parentSceneRoot);
+            ResourceSaver.Save(parentScenePacked, parentScenePath);
+
+            string childScenePath = pathNoExtention + "." + extention;
+
+            GD.Print(backupScenePath);
+            GD.Print(parentScenePath);
+            GD.Print(childScenePath);
         }
     }
 }
