@@ -114,7 +114,10 @@ namespace TurboTartine.ReparentScenePlugin
             for (int i = 0; i < nameCount - 1; i++) pathString += nodeInfo.path.GetName(i) + "/";
             pathString = pathString.Remove(pathString.Length - 1);
 
-            return FindNodeInfoByPath(pathString);
+            NodeInfo parentNodeInfo = FindNodeInfoByPath(pathString);
+            if (parentNodeInfo == null) parentNodeInfo = FindNodeInfoByPath(nodeInfo.ownerPath);
+
+            return parentNodeInfo;
         }
 
         private List<NodeInfo> FindAncestorsNodeInfo(NodeInfo nodeInfo)
@@ -202,7 +205,7 @@ namespace TurboTartine.ReparentScenePlugin
 
             foreach (NodeInfo ancestor in ancestors)
             {
-                if (!parentSceneNodeInfos.Contains(ancestor))
+                if (ancestor != null && !parentSceneNodeInfos.Contains(ancestor))
                     parentSceneNodeInfos.Add(ancestor);
             }
 
@@ -224,8 +227,6 @@ namespace TurboTartine.ReparentScenePlugin
 
         private void ReparentScene()
         {
-            Debugger.Launch();
-
             string pathNoExtention = boundScene.ResourcePath.GetBaseName();
             string extention = boundScene.ResourcePath.GetExtension();
             SceneState boundScnState = boundScene.GetState(); 
@@ -239,7 +240,7 @@ namespace TurboTartine.ReparentScenePlugin
             }
 
             //ExtractParent
-            Node parentScnTree = boundScene.Instantiate();
+            Node parentScnTree = boundScene.Instantiate(PackedScene.GenEditState.MainInherited);
             foreach(NodeInfo childInfo in childSceneNodeInfos)
             {
                 Node node = parentScnTree.GetNode(childInfo.path);
@@ -254,15 +255,17 @@ namespace TurboTartine.ReparentScenePlugin
             parentPackedScn = ResourceLoader.Load<PackedScene>(parentScenePath);           //Workaround https://github.com/godotengine/godot/issues/27243
             PackedScene childPackedScn = CreateInheridetScene(parentPackedScn);
             string childScenePath = pathNoExtention + "_Inherited." + extention;
-            ResourceSaver.Singleton.Save(childPackedScn, childScenePath);                   //Test if it works without this
-            childPackedScn = ResourceLoader.Load<PackedScene>(childScenePath);
-            Node childScnTree = childPackedScn.Instantiate();
+            Node childScnTree = childPackedScn.Instantiate(PackedScene.GenEditState.MainInherited);
             foreach (NodeInfo childInfo in childSceneNodeInfos)
             {
                 Node childInBoundScene = boundScnTree.GetNode(childInfo.path);
                 Node parentInBoundScn = childInBoundScene.GetParent();
                 Node parentInChildScene = childScnTree.GetNode(boundScnTree.GetPathTo(parentInBoundScn));
-                parentInChildScene.AddChild(childInBoundScene.Duplicate());
+                Node childInChildScene = childInBoundScene.Duplicate();
+                foreach(Node child in childInChildScene.GetChildren()) 
+                    childInChildScene.RemoveChild(child);
+                parentInChildScene.AddChild(childInChildScene);
+                childInChildScene.Owner = childScnTree;
             }
             childPackedScn.Pack(childScnTree);
             ResourceSaver.Singleton.Save(childPackedScn, childScenePath);
