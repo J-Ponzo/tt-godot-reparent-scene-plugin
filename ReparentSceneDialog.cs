@@ -2,8 +2,10 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 
-namespace TurboTartine.Godot.ReparentScenePlugin
+namespace TurboTartine.ReparentScenePlugin
 {
     //Godot icons https://github.com/godotengine/godot/tree/master/editor/icons
    
@@ -29,9 +31,10 @@ namespace TurboTartine.Godot.ReparentScenePlugin
 
         private PackedScene dialagContentPanelScn = GD.Load<PackedScene>("res://addons/tt-godot-reparent-scene-plugin/ReparentSceneDialogContent.tscn");
         private PackedScene boundScene;
-        private Node boundSceneRoot;
+        private string boundScenePath;
+        //private Node boundSceneRoot;
         private Tree sceneTree;
-        private NodeInfo[] nodeInfos;
+        private List<NodeInfo> nodeInfos;
 
         private Dictionary<NodeInfo, TreeItem> treeItemsLookupTable = new Dictionary<NodeInfo, TreeItem>();
         private Dictionary<TreeItem, NodeInfo> nodeInfosLookupTable = new Dictionary<TreeItem, NodeInfo>();
@@ -39,11 +42,11 @@ namespace TurboTartine.Godot.ReparentScenePlugin
 
         public ReparentSceneDialog(string scenePath) : base()
         {
-            //Debugger.Launch();
+            boundScenePath = scenePath;
             boundScene = ResourceLoader.Load<PackedScene>(scenePath);
             SceneState state = boundScene.GetState();
-            nodeInfos = new NodeInfo[state.GetNodeCount()];
-            for (int i = 0; i < nodeInfos.Length; i++)
+            nodeInfos = new List<NodeInfo>();
+            for (int i = 0; i < state.GetNodeCount(); i++)
             {
                 NodeInfo nodeInfo = new NodeInfo();
                 nodeInfo.groups = state.GetNodeGroups(i);
@@ -63,10 +66,8 @@ namespace TurboTartine.Godot.ReparentScenePlugin
                 nodeInfo.type = state.GetNodeType(i);
                 nodeInfo.isInstancePlaceHolder = state.IsNodeInstancePlaceholder(i);
 
-                nodeInfos[i] = nodeInfo;
+                nodeInfos.Add(nodeInfo);
             }
-
-            boundSceneRoot = boundScene.Instantiate<Node>(PackedScene.GenEditState.Instance);
         }
 
         public override void _EnterTree()
@@ -223,23 +224,93 @@ namespace TurboTartine.Godot.ReparentScenePlugin
 
         private void ReparentScene()
         {
+            Debugger.Launch();
+
             string pathNoExtention = boundScene.ResourcePath.GetBaseName();
             string extention = boundScene.ResourcePath.GetExtension();
+            SceneState boundScnState = boundScene.GetState(); 
+            Node boundScnTree = boundScene.Instantiate();
 
-            string backupScenePath = pathNoExtention + "_BACKUP." + extention;
-            ResourceSaver.Singleton.Save(boundScene, backupScenePath);
+            List<NodeInfo> childSceneNodeInfos = new List<NodeInfo>();
+            foreach(NodeInfo nodeInfo in nodeInfos)
+            {
+                if (!parentSceneNodeInfos.Exists(n => n.path == nodeInfo.path))
+                    childSceneNodeInfos.Add(nodeInfo);
+            }
 
+            //ExtractParent
+            Node parentScnTree = boundScene.Instantiate();
+            foreach(NodeInfo childInfo in childSceneNodeInfos)
+            {
+                Node node = parentScnTree.GetNode(childInfo.path);
+                if (node != null) node.Free();
+            }
+            PackedScene parentPackedScn = new PackedScene();
+            parentPackedScn.Pack(parentScnTree);
             string parentScenePath = pathNoExtention + "_Parent." + extention;
-            Node parentSceneRoot = boundScene.Instantiate(PackedScene.GenEditState.Main);
-            PackedScene parentScenePacked = new PackedScene();
-            parentScenePacked.Pack(parentSceneRoot);
-            ResourceSaver.Save(parentScenePacked, parentScenePath);
+            ResourceSaver.Singleton.Save(parentPackedScn, parentScenePath);
 
-            string childScenePath = pathNoExtention + "." + extention;
+            //Override children
+            parentPackedScn = ResourceLoader.Load<PackedScene>(parentScenePath);           //Workaround https://github.com/godotengine/godot/issues/27243
+            PackedScene childPackedScn = CreateInheridetScene(parentPackedScn);
+            string childScenePath = pathNoExtention + "_Inherited." + extention;
+            ResourceSaver.Singleton.Save(childPackedScn, childScenePath);                   //Test if it works without this
+            childPackedScn = ResourceLoader.Load<PackedScene>(childScenePath);
+            Node childScnTree = childPackedScn.Instantiate();
+            foreach (NodeInfo childInfo in childSceneNodeInfos)
+            {
+                Node childInBoundScene = boundScnTree.GetNode(childInfo.path);
+                Node parentInBoundScn = childInBoundScene.GetParent();
+                Node parentInChildScene = childScnTree.GetNode(boundScnTree.GetPathTo(parentInBoundScn));
+                parentInChildScene.AddChild(childInBoundScene.Duplicate());
+            }
+            childPackedScn.Pack(childScnTree);
+            ResourceSaver.Singleton.Save(childPackedScn, childScenePath);
+        }
 
-            GD.Print(backupScenePath);
-            GD.Print(parentScenePath);
-            GD.Print(childScenePath);
+        private PackedScene CreateInheridetScene(PackedScene baseScene, string rootName = null)
+        { 
+            if (rootName == null) rootName = baseScene.GetState().GetNodeName(0);
+           
+            List<string> names = new List<string> { rootName };
+            List<Variant> variants = new List<Variant>( new Variant[] { baseScene });
+            List<int> nodes = new List<int>(new int[] { -1, -1, 2147483647, 0, -1 } );
+
+            SceneState baseScnState = baseScene.GetState();
+            int propsCount = baseScnState.GetNodePropertyCount(0);
+            nodes.Add(propsCount);
+            for (int i = 0; i < propsCount; i++)
+            {
+                int nameIdx = names.Count;
+                names.Add(baseScnState.GetNodePropertyName(0, i));
+                nodes.Add(nameIdx);
+
+                int variantIdx = variants.Count;
+                variants.Add(baseScnState.GetNodePropertyValue(0, i));
+                nodes.Add(variantIdx);
+            }
+
+            int grpsCount = baseScnState.GetNodeGroups(0).Length;
+            nodes.Add(grpsCount);
+            for(int i = 0; i < grpsCount; i++)
+            {
+                int nameIdx = names.Count;
+                names.Add(baseScnState.GetNodeGroups(0)[i]);
+                nodes.Add(nameIdx);
+            }
+
+            //TODO Setup connections
+
+            PackedScene inheritedScene = new PackedScene();
+            Godot.Collections.Dictionary _bundled = inheritedScene._Bundled;
+            _bundled["names"] = names.ToArray();
+            _bundled["node_count"] = 1;
+            _bundled["nodes"] = nodes.ToArray();
+            _bundled["variants"] = new Godot.Collections.Array(variants);
+            _bundled.Add("base_scene", 0);
+            inheritedScene._Bundled = _bundled;
+
+            return inheritedScene;
         }
     }
 }

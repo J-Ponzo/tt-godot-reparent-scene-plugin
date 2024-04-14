@@ -4,7 +4,7 @@ using Godot;
 using System;
 using System.Diagnostics;
 
-namespace TurboTartine.Godot.ReparentScenePlugin
+namespace TurboTartine.ReparentScenePlugin
 {
     [Tool]
     public partial class Plugin : EditorPlugin
