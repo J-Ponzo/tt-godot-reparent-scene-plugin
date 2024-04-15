@@ -24,24 +24,28 @@ namespace TurboTartine.ReparentScenePlugin
         public bool isInstancePlaceHolder;
     }
 
-    public partial class ReparentSceneDialog : ConfirmationDialog
+    public partial class ExtractParentDialog : ConfirmationDialog
     {
         private Color yellowColor = Color.FromString("yellow", new Color());
         private Color whiteColor = Color.FromString("white", new Color());
 
-        private PackedScene dialagContentPanelScn = GD.Load<PackedScene>("res://addons/tt-godot-reparent-scene-plugin/ReparentSceneDialogContent.tscn");
+        private PackedScene dialagContentPanelScn = GD.Load<PackedScene>("res://addons/tt-godot-reparent-scene-plugin/ExtractParentDialogContent.tscn");
         private PackedScene boundScene;
         private string boundScenePath;
+        private LineEdit originalScnPathLineEdit;
+        private Button selectOriginScnBtn;
         private CheckBox backupCheckBox;
         private Tree sceneTree;
-        private List<NodeInfo> nodeInfos;
+        private List<NodeInfo> nodeInfos = new List<NodeInfo>();
 
         private Dictionary<NodeInfo, TreeItem> treeItemsLookupTable = new Dictionary<NodeInfo, TreeItem>();
         private Dictionary<TreeItem, NodeInfo> nodeInfosLookupTable = new Dictionary<TreeItem, NodeInfo>();
         private List<NodeInfo> parentSceneNodeInfos = new List<NodeInfo>();
 
-        public ReparentSceneDialog(string scenePath) : base()
+        private void InitFromPath(string scenePath)
         {
+            nodeInfos.Clear();
+
             boundScenePath = scenePath;
             boundScene = ResourceLoader.Load<PackedScene>(scenePath);
             SceneState state = boundScene.GetState();
@@ -50,7 +54,7 @@ namespace TurboTartine.ReparentScenePlugin
             {
                 NodeInfo nodeInfo = new NodeInfo();
                 nodeInfo.groups = state.GetNodeGroups(i);
-                nodeInfo.index = state.GetNodeIndex(i); 
+                nodeInfo.index = state.GetNodeIndex(i);
                 nodeInfo.instance = state.GetNodeInstance(i);
                 nodeInfo.instancePlaceholder = state.GetNodeInstancePlaceholder(i);
                 nodeInfo.name = state.GetNodeName(i);
@@ -68,24 +72,17 @@ namespace TurboTartine.ReparentScenePlugin
 
                 nodeInfos.Add(nodeInfo);
             }
+
+            SetupTree();
+            UpdateTree();
         }
 
-        public override void _EnterTree()
+        private void SetupTree()
         {
-            base._EnterTree();
-            this.Title = "Select the nodes to extract to the new parent scene";
-            this.Confirmed += ReparentScene;
-            
-            Panel panel = dialagContentPanelScn.Instantiate<Panel>();
-
-            backupCheckBox = panel.GetNode<CheckBox>("%BackupCheckBox");
-            backupCheckBox.SetPressedNoSignal(ProjectSettings.GetSetting(Plugin.PROJECT_SETTING_DEFAULT_BACKUP_ORIGINAL).AsBool());
-
-            sceneTree = panel.GetNode<Tree>("%SceneTree");
-            sceneTree.SetColumnExpand(0, true);
-            sceneTree.SetColumnExpand(1, false);
-            sceneTree.SetColumnExpand(2, false);
-            sceneTree.ItemSelected += OnItemSelected;
+            sceneTree.Clear();
+            treeItemsLookupTable.Clear();
+            nodeInfosLookupTable.Clear();
+            parentSceneNodeInfos.Clear();
 
             foreach (NodeInfo nodeInfo in nodeInfos)
             {
@@ -101,10 +98,45 @@ namespace TurboTartine.ReparentScenePlugin
                 treeItemsLookupTable.Add(nodeInfo, item);
                 nodeInfosLookupTable.Add(item, nodeInfo);
             }
+        }
 
-            UpdateTree();
+        public override void _EnterTree()
+        {
+            base._EnterTree();
+            this.Title = "Select the nodes to extract to the new parent scene";
+            this.Confirmed += ReparentScene;
+
+            Panel panel = dialagContentPanelScn.Instantiate<Panel>();
+
+            backupCheckBox = panel.GetNode<CheckBox>("%BackupCheckBox");
+            backupCheckBox.SetPressedNoSignal(ProjectSettings.GetSetting(Plugin.PROJECT_SETTING_DEFAULT_BACKUP_ORIGINAL).AsBool());
+            originalScnPathLineEdit = panel.GetNode<LineEdit>("%OriginScnPathLineEdit");
+            selectOriginScnBtn = panel.GetNode<Button>("%SelectOriginScnBtn");
+            selectOriginScnBtn.Pressed += OnClickSelect;
+
+            sceneTree = panel.GetNode<Tree>("%SceneTree");
+            sceneTree.SetColumnExpand(0, true);
+            sceneTree.SetColumnExpand(1, false);
+            sceneTree.SetColumnExpand(2, false);
+            sceneTree.ItemSelected += OnItemSelected;
 
             this.AddChild(panel);
+        }
+
+        private void OnClickSelect()
+        {
+            EditorFileDialog dialog = new EditorFileDialog();
+            dialog.Title = "Choose a scene to reparent";
+            dialog.Filters = new string[] { "*.tscn" };
+            dialog.FileMode = EditorFileDialog.FileModeEnum.OpenFile;
+            dialog.FileSelected += OnSceneToReparentSelected;
+            EditorInterface.Singleton.PopupDialogCentered(dialog, new Vector2I(500, 500));
+        }
+
+        private void OnSceneToReparentSelected(string path)
+        {
+            originalScnPathLineEdit.Text = path;
+            InitFromPath(path);
         }
 
         private NodeInfo FindParentNodeInfo(NodeInfo nodeInfo)

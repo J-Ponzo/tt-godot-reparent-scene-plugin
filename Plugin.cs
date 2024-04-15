@@ -29,24 +29,12 @@ namespace TurboTartine.ReparentScenePlugin
 
         private void OnPluginMenuItemPressed(long id)
         {
-            if (id == 0) OpenReparentSceneDialog();
+            if (id == 0) OpenExtractParentDialog();
         }
 
-        EditorFileDialog selectSceneToReparentdialog;
-        private void OpenReparentSceneDialog()
+        private void OpenExtractParentDialog()
         {
-            selectSceneToReparentdialog = new EditorFileDialog();
-            selectSceneToReparentdialog.Title = "Choose a scene to reparent";
-            selectSceneToReparentdialog.Filters = new string[] { "*.tscn" };
-            selectSceneToReparentdialog.FileMode = EditorFileDialog.FileModeEnum.OpenFile;
-            selectSceneToReparentdialog.FileSelected += OnSceneToReparentSelected;
-
-            EditorInterface.Singleton.PopupDialogCentered(selectSceneToReparentdialog, new Vector2I(500, 500));
-        }
-
-        private void OnSceneToReparentSelected(string path)
-        {
-            ReparentSceneDialog dialog = new ReparentSceneDialog(path);
+            ExtractParentDialog dialog = new ExtractParentDialog();
             EditorInterface.Singleton.PopupDialogCentered(dialog, new Vector2I(500, 500));
         }
 

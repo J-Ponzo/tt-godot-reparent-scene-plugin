@@ -27,6 +27,32 @@ auto_translate_mode = 1
 layout_mode = 2
 theme_override_constants/separation = 10
 
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+auto_translate_mode = 1
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="OriginScnLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+auto_translate_mode = 1
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Original scene path :"
+
+[node name="OriginScnPathLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+unique_name_in_owner = true
+auto_translate_mode = 1
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+
+[node name="SelectOriginScnBtn" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+unique_name_in_owner = true
+auto_translate_mode = 1
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Select
+"
+
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 auto_translate_mode = 1
 layout_mode = 2
