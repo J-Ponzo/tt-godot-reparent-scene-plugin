@@ -32,7 +32,7 @@ namespace TurboTartine.ReparentScenePlugin
         private PackedScene dialagContentPanelScn = GD.Load<PackedScene>("res://addons/tt-godot-reparent-scene-plugin/ReparentSceneDialogContent.tscn");
         private PackedScene boundScene;
         private string boundScenePath;
-        //private Node boundSceneRoot;
+        private CheckBox backupCheckBox;
         private Tree sceneTree;
         private List<NodeInfo> nodeInfos;
 
@@ -78,6 +78,9 @@ namespace TurboTartine.ReparentScenePlugin
             
             Panel panel = dialagContentPanelScn.Instantiate<Panel>();
 
+            backupCheckBox = panel.GetNode<CheckBox>("%BackupCheckBox");
+            backupCheckBox.SetPressedNoSignal(ProjectSettings.GetSetting(Plugin.PROJECT_SETTING_DEFAULT_BACKUP_ORIGINAL).AsBool());
+
             sceneTree = panel.GetNode<Tree>("%SceneTree");
             sceneTree.SetColumnExpand(0, true);
             sceneTree.SetColumnExpand(1, false);
@@ -93,7 +96,6 @@ namespace TurboTartine.ReparentScenePlugin
                 TreeItem item = sceneTree.CreateItem(parentItem);
                 item.SetText(0, nodeInfo.name);
                 item.SetIcon(0, GetThemeIcon(IconNameFromNode(nodeInfo.type), "EditorIcons"));
-                //if (nodeInfo.instance != null) item.SetIcon(1, GetThemeIcon("PackedScene", "EditorIcons"));
                 item.SetIconModulate(2, yellowColor);
 
                 treeItemsLookupTable.Add(nodeInfo, item);
@@ -232,6 +234,13 @@ namespace TurboTartine.ReparentScenePlugin
             SceneState boundScnState = boundScene.GetState(); 
             Node boundScnTree = boundScene.Instantiate();
 
+            if (backupCheckBox.ButtonPressed)
+            {
+                string backupScenePath = pathNoExtention + "_Backup." + extention;
+                PackedScene backupscene = (PackedScene)boundScene.Duplicate();
+                ResourceSaver.Singleton.Save(backupscene, backupScenePath);
+            }
+
             List<NodeInfo> childSceneNodeInfos = new List<NodeInfo>();
             foreach(NodeInfo nodeInfo in nodeInfos)
             {
@@ -254,7 +263,7 @@ namespace TurboTartine.ReparentScenePlugin
             //Override children
             parentPackedScn = ResourceLoader.Load<PackedScene>(parentScenePath);           //Workaround https://github.com/godotengine/godot/issues/27243
             PackedScene childPackedScn = CreateInheridetScene(parentPackedScn);
-            string childScenePath = pathNoExtention + "_Inherited." + extention;
+            string childScenePath = pathNoExtention + "." + extention;
             Node childScnTree = childPackedScn.Instantiate(PackedScene.GenEditState.MainInherited);
             foreach (NodeInfo childInfo in childSceneNodeInfos)
             {
@@ -268,6 +277,7 @@ namespace TurboTartine.ReparentScenePlugin
                 childInChildScene.Owner = childScnTree;
             }
             childPackedScn.Pack(childScnTree);
+            DirAccess.RemoveAbsolute(childScenePath);                                      // Changes are not applied if we do not remove the file first
             ResourceSaver.Singleton.Save(childPackedScn, childScenePath);
         }
 
