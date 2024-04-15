@@ -9,8 +9,9 @@ namespace TurboTartine.ReparentScenePlugin
     [Tool]
     public partial class Plugin : EditorPlugin
     {
-        private const string TOOL_MENU_ITEM_NAME = "TT ReparentScene";
-        private const string CREATE_ENTITY_MENU_ITEM_NAME = "Extract Parent";
+        public const string TOOL_MENU_ITEM_NAME = "TT ReparentScene";
+        public const string EXTRACT_PARENT_MENU_ITEM_NAME = "Extract Parent";
+        public const string REPARENT_MENU_ITEM_NAME = "Reparent";
 
         public const string PROJECT_SETTING_DEFAULT_BACKUP_ORIGINAL = "tt_reparent_utils/settings/common/default_backup_original_scene";
 
@@ -19,7 +20,8 @@ namespace TurboTartine.ReparentScenePlugin
         public override void _EnterTree()
         {
             pluginMenu = new PopupMenu();
-            pluginMenu.AddItem(CREATE_ENTITY_MENU_ITEM_NAME, 0);
+            pluginMenu.AddItem(EXTRACT_PARENT_MENU_ITEM_NAME, 0);
+            pluginMenu.AddItem(REPARENT_MENU_ITEM_NAME, 1);
             pluginMenu.IdPressed += OnPluginMenuItemPressed;
 
             AddToolSubmenuItem(TOOL_MENU_ITEM_NAME, pluginMenu);
@@ -30,6 +32,13 @@ namespace TurboTartine.ReparentScenePlugin
         private void OnPluginMenuItemPressed(long id)
         {
             if (id == 0) OpenExtractParentDialog();
+            else if(id == 1) OpenReparentDialog();
+        }
+
+        private void OpenReparentDialog()
+        {
+            ReparentDialog dialog = new ReparentDialog();
+            EditorInterface.Singleton.PopupDialogCentered(dialog, new Vector2I(750, 500));
         }
 
         private void OpenExtractParentDialog()

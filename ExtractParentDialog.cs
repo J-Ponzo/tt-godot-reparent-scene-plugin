@@ -75,6 +75,7 @@ namespace TurboTartine.ReparentScenePlugin
 
             SetupTree();
             UpdateTree();
+            UpdateOkButton();
         }
 
         private void SetupTree()
@@ -103,8 +104,8 @@ namespace TurboTartine.ReparentScenePlugin
         public override void _EnterTree()
         {
             base._EnterTree();
-            this.Title = "Select the nodes to extract to the new parent scene";
-            this.Confirmed += ReparentScene;
+            this.Title = Plugin.EXTRACT_PARENT_MENU_ITEM_NAME;
+            this.Confirmed += ExtractParent;
 
             Panel panel = dialagContentPanelScn.Instantiate<Panel>();
 
@@ -121,19 +122,26 @@ namespace TurboTartine.ReparentScenePlugin
             sceneTree.ItemSelected += OnItemSelected;
 
             this.AddChild(panel);
+
+            UpdateOkButton();
+        }
+
+        private void UpdateOkButton()
+        {
+            GetOkButton().Disabled = nodeInfos.Count == 0;
         }
 
         private void OnClickSelect()
         {
             EditorFileDialog dialog = new EditorFileDialog();
-            dialog.Title = "Choose a scene to reparent";
+            dialog.Title = "Choose a scene you want to extract a parent";
             dialog.Filters = new string[] { "*.tscn" };
             dialog.FileMode = EditorFileDialog.FileModeEnum.OpenFile;
-            dialog.FileSelected += OnSceneToReparentSelected;
+            dialog.FileSelected += OnOriginalSceneSelected;
             EditorInterface.Singleton.PopupDialogCentered(dialog, new Vector2I(500, 500));
         }
 
-        private void OnSceneToReparentSelected(string path)
+        private void OnOriginalSceneSelected(string path)
         {
             originalScnPathLineEdit.Text = path;
             InitFromPath(path);
@@ -259,7 +267,7 @@ namespace TurboTartine.ReparentScenePlugin
             return type.Replace("Godot.", "");
         }
 
-        private void ReparentScene()
+        private void ExtractParent()
         {
             string pathNoExtention = boundScene.ResourcePath.GetBaseName();
             string extention = boundScene.ResourcePath.GetExtension();

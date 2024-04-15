@@ -1,0 +1,162 @@
+[gd_scene format=3 uid="uid://ciufud27xcfnb"]
+
+[node name="DialogContent" type="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+auto_translate_mode = 1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_right = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+auto_translate_mode = 1
+layout_mode = 2
+
+[node name="HSeparator6" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+auto_translate_mode = 1
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+auto_translate_mode = 1
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="OriginScnLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+auto_translate_mode = 1
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "Original scene path :"
+
+[node name="OriginScnPathLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+unique_name_in_owner = true
+auto_translate_mode = 1
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+
+[node name="SelectOriginScnBtn" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+unique_name_in_owner = true
+auto_translate_mode = 1
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Select
+"
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+auto_translate_mode = 1
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="NewParentScnLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer3"]
+auto_translate_mode = 1
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "New Parent scene path :"
+
+[node name="NewParentScnPathLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/HBoxContainer3"]
+unique_name_in_owner = true
+auto_translate_mode = 1
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+
+[node name="SelectNewParentScnBtn" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer3"]
+unique_name_in_owner = true
+auto_translate_mode = 1
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Select
+"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+auto_translate_mode = 1
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="BackupLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+auto_translate_mode = 1
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Create a backup for original scene :"
+
+[node name="BackupCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="HSeparator5" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+auto_translate_mode = 1
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer4"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="OriginalScnTreeLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer4/VBoxContainer"]
+auto_translate_mode = 1
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Original Scene"
+horizontal_alignment = 1
+
+[node name="HSeparator5" type="HSeparator" parent="MarginContainer/VBoxContainer/HBoxContainer4/VBoxContainer"]
+auto_translate_mode = 1
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="OriginalScnTree" type="Tree" parent="MarginContainer/VBoxContainer/HBoxContainer4/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+columns = 3
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/HBoxContainer4"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer4"]
+auto_translate_mode = 1
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NewParentScnTreeLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer4/VBoxContainer2"]
+auto_translate_mode = 1
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "New Parent Scene
+"
+horizontal_alignment = 1
+
+[node name="HSeparator5" type="HSeparator" parent="MarginContainer/VBoxContainer/HBoxContainer4/VBoxContainer2"]
+auto_translate_mode = 1
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="NewParentScnTree" type="Tree" parent="MarginContainer/VBoxContainer/HBoxContainer4/VBoxContainer2"]
+unique_name_in_owner = true
+auto_translate_mode = 1
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+columns = 3
+
+[node name="HSeparator7" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+auto_translate_mode = 1
+layout_mode = 2
+theme_override_constants/separation = 10
