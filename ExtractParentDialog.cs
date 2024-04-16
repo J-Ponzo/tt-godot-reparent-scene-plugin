@@ -110,6 +110,7 @@ namespace TurboTartine.ReparentScenePlugin
             //Override children
             parentPackedScn = ResourceLoader.Load<PackedScene>(parentScenePath);           //Workaround https://github.com/godotengine/godot/issues/27243
             PackedScene childPackedScn = CreateInheridetScene(parentPackedScn);
+            //TODO Extract to fonction to factorise with ReparentDialog logic
             string childScenePath = pathNoExtention + "." + extention;
             Node childScnTree = childPackedScn.Instantiate(PackedScene.GenEditState.MainInherited);
             foreach (SceneTreeInfo.NodeInfo childInfo in childSceneNodeInfos)

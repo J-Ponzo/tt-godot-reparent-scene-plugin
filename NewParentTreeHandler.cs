@@ -24,6 +24,11 @@ namespace TurboTartine.ReparentScenePlugin
         public bool IsValidParent()
         {
             if (reparented == null) return false;
+            foreach(SceneTreeInfo.NodeInfo nodeInfo in sceneTreeInfo.nodeInfos)
+            {
+                SceneTreeInfo.NodeInfo reparentedCounterpart = reparented.FindNodeInfoByPath(nodeInfo.path);
+                if (reparentedCounterpart == null || reparentedCounterpart.type != nodeInfo.type) return false;
+            }
             return true;
         }
 
