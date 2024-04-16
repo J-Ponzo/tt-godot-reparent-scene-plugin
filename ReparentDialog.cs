@@ -14,8 +14,10 @@ namespace TurboTartine.ReparentScenePlugin
         private CheckBox backupCheckBox;
         private Tree originScnTree;
         private SceneTreeInfo originTreeInfo;
+        private SceneTreeHandler originTreeHandler;
         private Tree newParentScnTree;
         private SceneTreeInfo newParentTreeInfo;
+        private SceneTreeHandler newParentTreeHandler;
 
         public override void _EnterTree()
         {
@@ -56,6 +58,7 @@ namespace TurboTartine.ReparentScenePlugin
         {
             originScnPathLineEdit.Text = path;
             originTreeInfo = new SceneTreeInfo(path);
+            originTreeHandler = new SceneTreeHandler(originScnTree, originTreeInfo);
         }
 
         private void OnClickSelectNewParentScn()
@@ -72,6 +75,7 @@ namespace TurboTartine.ReparentScenePlugin
         {
             newParentScnPathLineEdit.Text = path;
             newParentTreeInfo = new SceneTreeInfo(path);
+            newParentTreeHandler = new SceneTreeHandler(newParentScnTree, newParentTreeInfo);
         }
 
         private void Reparent()

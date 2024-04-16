@@ -17,12 +17,12 @@ namespace TurboTartine.ReparentScenePlugin
         private CheckBox backupCheckBox;
         private SceneTreeInfo treeInfo;
         private Tree sceneTree;
-        private SceneTreeHandler treeHandler;
+        private SelectParentSubTreeHandler treeHandler;
 
         private void InitFromPath(string scenePath)
         {
             treeInfo = new SceneTreeInfo(scenePath);
-            treeHandler = new SceneTreeHandler(sceneTree, treeInfo);
+            treeHandler = new SelectParentSubTreeHandler(sceneTree, treeInfo);
             UpdateOkButton();
         }
 

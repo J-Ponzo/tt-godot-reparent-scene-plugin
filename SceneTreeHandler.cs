@@ -7,22 +7,18 @@ namespace TurboTartine.ReparentScenePlugin
 {
     public partial class SceneTreeHandler
     {
-        private Color yellowColor = Color.FromString("yellow", new Color());
-        private Color whiteColor = Color.FromString("white", new Color());
+        protected Tree sceneTree;
+        protected SceneTreeInfo sceneTreeInfo;
 
-        private Tree sceneTree;
-        private SceneTreeInfo sceneTreeInfo;
-
-        private Dictionary<SceneTreeInfo.NodeInfo, TreeItem> treeItemsLookupTable = new Dictionary<SceneTreeInfo.NodeInfo, TreeItem>();
-        private Dictionary<TreeItem, SceneTreeInfo.NodeInfo> nodeInfosLookupTable = new Dictionary<TreeItem, SceneTreeInfo.NodeInfo>();
-        private List<SceneTreeInfo.NodeInfo> parentSceneNodeInfos = new List<SceneTreeInfo.NodeInfo>();
-
-        public List<SceneTreeInfo.NodeInfo> ParentSceneNodeInfos { get => parentSceneNodeInfos; }
+        protected Dictionary<SceneTreeInfo.NodeInfo, TreeItem> treeItemsLookupTable = new Dictionary<SceneTreeInfo.NodeInfo, TreeItem>();
+        protected Dictionary<TreeItem, SceneTreeInfo.NodeInfo> nodeInfosLookupTable = new Dictionary<TreeItem, SceneTreeInfo.NodeInfo>();
 
         public SceneTreeHandler(Tree sceneTree, SceneTreeInfo sceneTreeInfo)
         {
             this.sceneTree = sceneTree;
             this.sceneTreeInfo = sceneTreeInfo;
+
+            sceneTree.Clear();
             SetupTree();
             UpdateTree();
         }
@@ -32,65 +28,43 @@ namespace TurboTartine.ReparentScenePlugin
             foreach (SceneTreeInfo.NodeInfo nodeInfo in sceneTreeInfo.nodeInfos)
             {
                 SceneTreeInfo.NodeInfo parentNodeInfo = sceneTreeInfo.FindParentNodeInfo(nodeInfo);
-                if (parentNodeInfo == null) parentSceneNodeInfos.Add(nodeInfo);
-
-                TreeItem parentItem = parentNodeInfo != null ? treeItemsLookupTable[parentNodeInfo] : null;
-                TreeItem item = sceneTree.CreateItem(parentItem);
-                item.SetText(0, nodeInfo.name);
-                item.SetIcon(0, sceneTree.GetThemeIcon(IconNameFromNode(nodeInfo.type), "EditorIcons"));
-                item.SetIconModulate(2, yellowColor);
-
-                treeItemsLookupTable.Add(nodeInfo, item);
-                nodeInfosLookupTable.Add(item, nodeInfo);
+                SetupNode(nodeInfo, parentNodeInfo);
             }
+        }
+
+        protected virtual void SetupNode(SceneTreeInfo.NodeInfo nodeInfo, SceneTreeInfo.NodeInfo parentNodeInfo)
+        {
+            TreeItem parentItem = parentNodeInfo != null ? treeItemsLookupTable[parentNodeInfo] : null;
+            TreeItem item = sceneTree.CreateItem(parentItem);
+            SetupTreeItem(item, nodeInfo, parentNodeInfo);
+
+            treeItemsLookupTable.Add(nodeInfo, item);
+            nodeInfosLookupTable.Add(item, nodeInfo);
+        }
+
+        protected virtual void SetupTreeItem(TreeItem item, SceneTreeInfo.NodeInfo nodeInfo, SceneTreeInfo.NodeInfo parentNodeInfo)
+        {
+            item.SetText(0, nodeInfo.name);
+            item.SetIcon(0, sceneTree.GetThemeIcon(IconNameFromNode(nodeInfo.type), "EditorIcons"));
         }
 
         public void UpdateTree()
         {
             foreach (TreeItem item in nodeInfosLookupTable.Keys)
             {
-                if (parentSceneNodeInfos.Contains(nodeInfosLookupTable[item]))
-                {
-                    item.SetCustomColor(0, yellowColor);
-                    item.SetIcon(2, sceneTree.GetThemeIcon("Node", "EditorIcons"));
-                    item.SetIconModulate(1, yellowColor);
-                }
-                else
-                {
-                    item.SetCustomColor(0, whiteColor);
-                    item.SetIcon(2, null);
-                    item.SetIconModulate(1, whiteColor);
-                }
+                UpdateNode(item, nodeInfosLookupTable[item]);
             }
+        }
+
+        protected virtual void UpdateNode(TreeItem item, SceneTreeInfo.NodeInfo nodeInfo)
+        {
+            
         }
 
         private string IconNameFromNode(string type)
         {
             if (type == "") return "PackedScene";
             return type.Replace("Godot.", "");
-        }
-
-        public void ToggleNode(TreeItem treeItem)
-        {
-            SceneTreeInfo.NodeInfo nodeInfo = nodeInfosLookupTable[sceneTree.GetSelected()];
-
-            List<SceneTreeInfo.NodeInfo> ancestors = sceneTreeInfo.FindAncestorsNodeInfo(nodeInfo);
-            List<SceneTreeInfo.NodeInfo> desendants = sceneTreeInfo.FindDescendantsNodeInfo(nodeInfo);
-
-            foreach (SceneTreeInfo.NodeInfo ancestor in ancestors)
-            {
-                if (ancestor != null && !parentSceneNodeInfos.Contains(ancestor))
-                    parentSceneNodeInfos.Add(ancestor);
-            }
-
-            if (!parentSceneNodeInfos.Contains(nodeInfo)) parentSceneNodeInfos.Add(nodeInfo);
-
-            foreach (SceneTreeInfo.NodeInfo descendant in desendants)
-            {
-                parentSceneNodeInfos.Remove(descendant);
-            }
-
-            UpdateTree();
         }
     }
 }
