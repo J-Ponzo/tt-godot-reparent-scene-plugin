@@ -41,9 +41,6 @@ namespace TurboTartine.ReparentScenePlugin
             selectOriginScnBtn.Pressed += OnClickSelect;
 
             sceneTree = panel.GetNode<Tree>("%SceneTree");
-            sceneTree.SetColumnExpand(0, true);
-            sceneTree.SetColumnExpand(1, false);
-            sceneTree.SetColumnExpand(2, false);
             sceneTree.ItemSelected += OnItemSelected;
 
             this.AddChild(panel);

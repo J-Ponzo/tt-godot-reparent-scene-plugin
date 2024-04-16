@@ -25,6 +25,10 @@ namespace TurboTartine.ReparentScenePlugin
 
         private void SetupTree()
         {
+            sceneTree.SetColumnExpand(0, true);
+            sceneTree.SetColumnExpand(1, false);
+            sceneTree.SetColumnExpand(2, false);
+
             foreach (SceneTreeInfo.NodeInfo nodeInfo in sceneTreeInfo.nodeInfos)
             {
                 SceneTreeInfo.NodeInfo parentNodeInfo = sceneTreeInfo.FindParentNodeInfo(nodeInfo);
@@ -48,7 +52,7 @@ namespace TurboTartine.ReparentScenePlugin
             item.SetIcon(0, sceneTree.GetThemeIcon(IconNameFromNode(nodeInfo.type), "EditorIcons"));
         }
 
-        public void UpdateTree()
+        public virtual void UpdateTree()
         {
             foreach (TreeItem item in nodeInfosLookupTable.Keys)
             {

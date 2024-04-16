@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Diagnostics;
 
 namespace TurboTartine.ReparentScenePlugin
 {
@@ -14,10 +15,10 @@ namespace TurboTartine.ReparentScenePlugin
         private CheckBox backupCheckBox;
         private Tree originScnTree;
         private SceneTreeInfo originTreeInfo;
-        private SceneTreeHandler originTreeHandler;
+        private ReparentedTreeHandler originTreeHandler;
         private Tree newParentScnTree;
         private SceneTreeInfo newParentTreeInfo;
-        private SceneTreeHandler newParentTreeHandler;
+        private NewParentTreeHandler newParentTreeHandler;
 
         public override void _EnterTree()
         {
@@ -42,6 +43,8 @@ namespace TurboTartine.ReparentScenePlugin
             newParentScnTree = panel.GetNode<Tree>("%NewParentScnTree");
 
             this.AddChild(panel);
+
+            UpdateOkButton();
         }
 
         private void OnClickSelectOriginScn()
@@ -58,7 +61,8 @@ namespace TurboTartine.ReparentScenePlugin
         {
             originScnPathLineEdit.Text = path;
             originTreeInfo = new SceneTreeInfo(path);
-            originTreeHandler = new SceneTreeHandler(originScnTree, originTreeInfo);
+            originTreeHandler = new ReparentedTreeHandler(originScnTree, originTreeInfo);
+            UpdateAll();
         }
 
         private void OnClickSelectNewParentScn()
@@ -75,7 +79,20 @@ namespace TurboTartine.ReparentScenePlugin
         {
             newParentScnPathLineEdit.Text = path;
             newParentTreeInfo = new SceneTreeInfo(path);
-            newParentTreeHandler = new SceneTreeHandler(newParentScnTree, newParentTreeInfo);
+            newParentTreeHandler = new NewParentTreeHandler(newParentScnTree, newParentTreeInfo);
+            UpdateAll();
+        }
+
+        private void UpdateAll()
+        {
+            if (newParentTreeHandler != null) newParentTreeHandler.UpdateTree(originTreeInfo);
+            if (originTreeHandler != null) originTreeHandler.UpdateTree(newParentTreeInfo);
+            UpdateOkButton();
+        }
+
+        private void UpdateOkButton()
+        {
+            GetOkButton().Disabled = !(newParentTreeHandler != null && newParentTreeHandler.IsValidParent());
         }
 
         private void Reparent()
