@@ -9,96 +9,21 @@ namespace TurboTartine.ReparentScenePlugin
 {
     //Godot icons https://github.com/godotengine/godot/tree/master/editor/icons
    
-    
-    internal class NodeInfo 
-    {
-        public string[] groups;
-        public int index;
-        public PackedScene instance;
-        public string instancePlaceholder;
-        public StringName name;
-        public NodePath ownerPath;
-        public NodePath path;
-        public Dictionary<StringName, Variant> porperties;
-        public StringName type;
-        public bool isInstancePlaceHolder;
-    }
-
     public partial class ExtractParentDialog : ConfirmationDialog
     {
-        private Color yellowColor = Color.FromString("yellow", new Color());
-        private Color whiteColor = Color.FromString("white", new Color());
-
         private PackedScene dialagContentPanelScn = GD.Load<PackedScene>("res://addons/tt-godot-reparent-scene-plugin/ExtractParentDialogContent.tscn");
-        private PackedScene boundScene;
-        private string boundScenePath;
         private LineEdit originalScnPathLineEdit;
         private Button selectOriginScnBtn;
         private CheckBox backupCheckBox;
+        private SceneTreeInfo treeInfo;
         private Tree sceneTree;
-        private List<NodeInfo> nodeInfos = new List<NodeInfo>();
-
-        private Dictionary<NodeInfo, TreeItem> treeItemsLookupTable = new Dictionary<NodeInfo, TreeItem>();
-        private Dictionary<TreeItem, NodeInfo> nodeInfosLookupTable = new Dictionary<TreeItem, NodeInfo>();
-        private List<NodeInfo> parentSceneNodeInfos = new List<NodeInfo>();
+        private SceneTreeHandler treeHandler;
 
         private void InitFromPath(string scenePath)
         {
-            nodeInfos.Clear();
-
-            boundScenePath = scenePath;
-            boundScene = ResourceLoader.Load<PackedScene>(scenePath);
-            SceneState state = boundScene.GetState();
-            nodeInfos = new List<NodeInfo>();
-            for (int i = 0; i < state.GetNodeCount(); i++)
-            {
-                NodeInfo nodeInfo = new NodeInfo();
-                nodeInfo.groups = state.GetNodeGroups(i);
-                nodeInfo.index = state.GetNodeIndex(i);
-                nodeInfo.instance = state.GetNodeInstance(i);
-                nodeInfo.instancePlaceholder = state.GetNodeInstancePlaceholder(i);
-                nodeInfo.name = state.GetNodeName(i);
-                nodeInfo.ownerPath = state.GetNodeOwnerPath(i);
-                nodeInfo.path = state.GetNodePath(i);
-
-                nodeInfo.porperties = new Dictionary<StringName, Variant>();
-                for (int j = 0; j < state.GetNodePropertyCount(i); j++)
-                {
-                    nodeInfo.porperties.Add(state.GetNodePropertyName(i, j), state.GetNodePropertyValue(i, j));
-                }
-
-                nodeInfo.type = state.GetNodeType(i);
-                nodeInfo.isInstancePlaceHolder = state.IsNodeInstancePlaceholder(i);
-
-                nodeInfos.Add(nodeInfo);
-            }
-
-            SetupTree();
-            UpdateTree();
+            treeInfo = new SceneTreeInfo(scenePath);
+            treeHandler = new SceneTreeHandler(sceneTree, treeInfo);
             UpdateOkButton();
-        }
-
-        private void SetupTree()
-        {
-            sceneTree.Clear();
-            treeItemsLookupTable.Clear();
-            nodeInfosLookupTable.Clear();
-            parentSceneNodeInfos.Clear();
-
-            foreach (NodeInfo nodeInfo in nodeInfos)
-            {
-                NodeInfo parentNodeInfo = FindParentNodeInfo(nodeInfo);
-                if (parentNodeInfo == null) parentSceneNodeInfos.Add(nodeInfo);
-
-                TreeItem parentItem = parentNodeInfo != null ? treeItemsLookupTable[parentNodeInfo] : null;
-                TreeItem item = sceneTree.CreateItem(parentItem);
-                item.SetText(0, nodeInfo.name);
-                item.SetIcon(0, GetThemeIcon(IconNameFromNode(nodeInfo.type), "EditorIcons"));
-                item.SetIconModulate(2, yellowColor);
-
-                treeItemsLookupTable.Add(nodeInfo, item);
-                nodeInfosLookupTable.Add(item, nodeInfo);
-            }
         }
 
         public override void _EnterTree()
@@ -128,7 +53,7 @@ namespace TurboTartine.ReparentScenePlugin
 
         private void UpdateOkButton()
         {
-            GetOkButton().Disabled = nodeInfos.Count == 0;
+            GetOkButton().Disabled = treeInfo == null || !treeInfo.IsValid();
         }
 
         private void OnClickSelect()
@@ -147,150 +72,35 @@ namespace TurboTartine.ReparentScenePlugin
             InitFromPath(path);
         }
 
-        private NodeInfo FindParentNodeInfo(NodeInfo nodeInfo)
-        {
-            int nameCount = nodeInfo.path.GetNameCount();
-            if (nameCount == 1) return null;
-
-            string pathString = "";
-            for (int i = 0; i < nameCount - 1; i++) pathString += nodeInfo.path.GetName(i) + "/";
-            pathString = pathString.Remove(pathString.Length - 1);
-
-            NodeInfo parentNodeInfo = FindNodeInfoByPath(pathString);
-            if (parentNodeInfo == null) parentNodeInfo = FindNodeInfoByPath(nodeInfo.ownerPath);
-
-            return parentNodeInfo;
-        }
-
-        private List<NodeInfo> FindAncestorsNodeInfo(NodeInfo nodeInfo)
-        {
-            List<NodeInfo> ancestors = new List<NodeInfo>();
-
-            int nameCount = nodeInfo.path.GetNameCount();
-            if (nameCount == 1) return ancestors;
-
-            string pathString = "";
-            for (int i = 0; i < nameCount - 1; i++)
-            {
-                pathString += nodeInfo.path.GetName(i);
-                ancestors.Insert(0, FindNodeInfoByPath(pathString));
-                pathString += "/";
-            }
-
-            return ancestors;
-        }
-
-        private List<NodeInfo> FindDescendantsNodeInfo(NodeInfo nodeInfo)
-        {
-            List<NodeInfo> descendant = new List<NodeInfo>();
-
-            foreach(NodeInfo candidate in nodeInfos)
-            {
-                if (IsDescendantNodeInfo(candidate, nodeInfo))
-                    descendant.Add(candidate);
-            }
-
-            return descendant;
-        }
-
-        //TODO optimize
-        private bool IsDescendantNodeInfo(NodeInfo candidate, NodeInfo parent)
-        {
-            List<NodeInfo> ancestors = FindAncestorsNodeInfo(candidate);
-            foreach (NodeInfo node in ancestors)
-            {
-                if (parent == node) return true;
-            }
-
-            return false;
-        }
-
-        private NodeInfo FindNodeInfoByPath(string stringPath)
-        {
-            foreach (NodeInfo nodeInfo in nodeInfos)
-            {
-                if (nodeInfo.path.GetConcatenatedNames() == stringPath) return nodeInfo;
-            }
-
-            return null;
-        }
-
-        private void UpdateTree()
-        {
-            foreach(TreeItem item in nodeInfosLookupTable.Keys)
-            {
-                if (parentSceneNodeInfos.Contains(nodeInfosLookupTable[item]))
-                {
-                    item.SetCustomColor(0, yellowColor);
-                    item.SetIcon(2, GetThemeIcon("Node", "EditorIcons"));
-                    item.SetIconModulate(1, yellowColor);
-                }
-                else
-                {
-                    item.SetCustomColor(0, whiteColor);
-                    item.SetIcon(2, null);
-                    item.SetIconModulate(1, whiteColor);
-                }
-            }
-        }
-
         private void OnItemSelected()
         {
-            NodeInfo nodeInfo = nodeInfosLookupTable[sceneTree.GetSelected()];
-            ToggleNode(nodeInfo);
-        }
-
-        private void ToggleNode(NodeInfo nodeInfo)
-        {
-            List<NodeInfo> ancestors = FindAncestorsNodeInfo(nodeInfo);
-            List<NodeInfo> desendants = FindDescendantsNodeInfo(nodeInfo);
-
-            foreach (NodeInfo ancestor in ancestors)
-            {
-                if (ancestor != null && !parentSceneNodeInfos.Contains(ancestor))
-                    parentSceneNodeInfos.Add(ancestor);
-            }
-
-            if (!parentSceneNodeInfos.Contains(nodeInfo)) parentSceneNodeInfos.Add(nodeInfo);
-
-            foreach (NodeInfo descendant in desendants)
-            {
-                parentSceneNodeInfos.Remove(descendant);
-            }
-
-            UpdateTree();
-        }
-
-        private string IconNameFromNode(string type)
-        {
-            if (type == "") return "PackedScene";
-            return type.Replace("Godot.", "");
+            treeHandler.ToggleNode(sceneTree.GetSelected());
         }
 
         private void ExtractParent()
         {
-            string pathNoExtention = boundScene.ResourcePath.GetBaseName();
-            string extention = boundScene.ResourcePath.GetExtension();
-            SceneState boundScnState = boundScene.GetState(); 
-            Node boundScnTree = boundScene.Instantiate();
+            string pathNoExtention = treeInfo.boundScene.ResourcePath.GetBaseName();
+            string extention = treeInfo.boundScene.ResourcePath.GetExtension();
+            SceneState boundScnState = treeInfo.boundScene.GetState(); 
+            Node boundScnTree = treeInfo.boundScene.Instantiate();
 
             if (backupCheckBox.ButtonPressed)
             {
                 string backupScenePath = pathNoExtention + "_Backup." + extention;
-                PackedScene backupscene = (PackedScene)boundScene.Duplicate();
+                PackedScene backupscene = (PackedScene)treeInfo.boundScene.Duplicate();
                 ResourceSaver.Singleton.Save(backupscene, backupScenePath);
             }
 
-            List<NodeInfo> childSceneNodeInfos = new List<NodeInfo>();
-            foreach(NodeInfo nodeInfo in nodeInfos)
+            List<SceneTreeInfo.NodeInfo> childSceneNodeInfos = new List<SceneTreeInfo.NodeInfo>();
+            foreach(SceneTreeInfo.NodeInfo nodeInfo in treeInfo.nodeInfos)
             {
-                if (!parentSceneNodeInfos.Exists(n => n.path == nodeInfo.path))
+                if (!treeHandler.ParentSceneNodeInfos.Exists(n => n.path == nodeInfo.path))
                     childSceneNodeInfos.Add(nodeInfo);
             }
 
             //ExtractParent
-            Node parentScnTree = boundScene.Instantiate(PackedScene.GenEditState.MainInherited);
-            foreach(NodeInfo childInfo in childSceneNodeInfos)
+            Node parentScnTree = treeInfo.boundScene.Instantiate(PackedScene.GenEditState.MainInherited);
+            foreach(SceneTreeInfo.NodeInfo childInfo in childSceneNodeInfos)
             {
                 Node node = parentScnTree.GetNode(childInfo.path);
                 if (node != null) node.Free();
@@ -305,7 +115,7 @@ namespace TurboTartine.ReparentScenePlugin
             PackedScene childPackedScn = CreateInheridetScene(parentPackedScn);
             string childScenePath = pathNoExtention + "." + extention;
             Node childScnTree = childPackedScn.Instantiate(PackedScene.GenEditState.MainInherited);
-            foreach (NodeInfo childInfo in childSceneNodeInfos)
+            foreach (SceneTreeInfo.NodeInfo childInfo in childSceneNodeInfos)
             {
                 Node childInBoundScene = boundScnTree.GetNode(childInfo.path);
                 Node parentInBoundScn = childInBoundScene.GetParent();
