@@ -146,9 +146,8 @@ namespace TurboTartine.ReparentScenePlugin
         private void SetupReparentedScriptFromOrigin(Node reparentedScnTree, Node originScnTree)
         {
             Script originScript = (Script)originScnTree.GetScript();
-            if (originScript == null) return;
+            if (originScript != null) reparentedScnTree.SetScript(originScript);
 
-            reparentedScnTree.SetScript(originScript);
             foreach (Dictionary property in reparentedScnTree.GetPropertyList())
             {
                 if (property["type"].AsInt32() == (int)Variant.Type.Object)
