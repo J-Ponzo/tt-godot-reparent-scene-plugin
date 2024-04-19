@@ -1,4 +1,6 @@
 using Godot;
+using Godot.Collections;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -124,6 +126,7 @@ namespace TurboTartine.ReparentScenePlugin
             PackedScene reparentedScn = newParentTreeInfo.boundScene.CreateInherited(originScnTree.Name);
             string reparentedScenePath = pathNoExtention + "." + extention;
             Node reparentedScnTree = reparentedScn.Instantiate(PackedScene.GenEditState.MainInherited);
+            SetupReparentedScriptFromOrigin(reparentedScnTree, originScnTree);
             foreach (SceneTreeInfo.NodeInfo childInfo in childSceneNodeInfos)
             {
                 Node childInOriginScene = originScnTree.GetNode(childInfo.path);
@@ -138,6 +141,30 @@ namespace TurboTartine.ReparentScenePlugin
             reparentedScn.Pack(reparentedScnTree);
             DirAccess.RemoveAbsolute(reparentedScenePath);                                      // Changes are not applied if we do not remove the file first
             ResourceSaver.Singleton.Save(reparentedScn, reparentedScenePath);
+        }
+
+        private void SetupReparentedScriptFromOrigin(Node reparentedScnTree, Node originScnTree)
+        {
+            Script originScript = (Script)originScnTree.GetScript();
+            if (originScript == null) return;
+
+            reparentedScnTree.SetScript(originScript);
+            foreach (Dictionary property in reparentedScnTree.GetPropertyList())
+            {
+                if (property["type"].AsInt32() == (int)Variant.Type.Object)
+                {
+                    GodotObject godotObject = originScnTree.Get(property["name"].AsStringName()).AsGodotObject();
+                    if (godotObject is Node)
+                    {
+                        Node nodeFromOrigin = (Node)godotObject;
+                        Node reparentedCounterpart = reparentedScnTree.GetNode(originScnTree.GetPathTo(nodeFromOrigin));
+                        reparentedScnTree.Set(property["name"].AsStringName(), reparentedCounterpart);
+                        continue;
+                    }
+                }
+
+                reparentedScnTree.Set(property["name"].AsStringName(), originScnTree.Get(property["name"].AsStringName()));
+            }
         }
     }
 }
