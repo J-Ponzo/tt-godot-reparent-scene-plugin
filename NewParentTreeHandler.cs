@@ -1,4 +1,5 @@
 using Godot;
+using Microsoft.VisualBasic;
 using System;
 
 namespace TurboTartine.ReparentScenePlugin
@@ -27,9 +28,33 @@ namespace TurboTartine.ReparentScenePlugin
             foreach(SceneTreeInfo.NodeInfo nodeInfo in sceneTreeInfo.nodeInfos)
             {
                 SceneTreeInfo.NodeInfo reparentedCounterpart = reparented.FindNodeInfoByPath(nodeInfo.path);
-                if (reparentedCounterpart == null || reparentedCounterpart.type != nodeInfo.type) return false;
+                if (!IsPairValid(nodeInfo, reparentedCounterpart)) return false;
             }
             return true;
+        }
+
+        private bool IsPairValid(SceneTreeInfo.NodeInfo parentNodeInfo, SceneTreeInfo.NodeInfo reparentedNodeInfo)
+        {
+            return reparentedNodeInfo != null && reparentedNodeInfo.type == parentNodeInfo.type && AreScriptCompatible(parentNodeInfo, reparentedNodeInfo);
+        }
+
+        private bool AreScriptCompatible(SceneTreeInfo.NodeInfo parentNodeInfo, SceneTreeInfo.NodeInfo reparentedNodeInfo)
+        {
+            if (!parentNodeInfo.porperties.ContainsKey("script")
+                || !reparentedNodeInfo.porperties.ContainsKey("script")) return true;
+
+            Script parentScript = (Script)parentNodeInfo.porperties["script"];
+            Script reparentedScript = (Script)reparentedNodeInfo.porperties["script"];
+            
+            Script script = reparentedScript;
+            do
+            {
+                if (script == parentScript) return true;
+                script = script.GetBaseScript();
+            }
+            while (script != null);
+
+            return false;
         }
 
         protected override void UpdateNode(TreeItem item, SceneTreeInfo.NodeInfo nodeInfo)
@@ -44,7 +69,7 @@ namespace TurboTartine.ReparentScenePlugin
             }
 
             SceneTreeInfo.NodeInfo reparentedCounterpart = reparented.FindNodeInfoByPath(nodeInfo.path);
-            if (reparentedCounterpart != null && reparentedCounterpart.type == nodeInfo.type)
+            if (IsPairValid(nodeInfo, reparentedCounterpart))
             {
                 item.SetCustomColor(0, greenColor);
                 item.SetIcon(2, sceneTree.GetThemeIcon("Node", "EditorIcons"));

@@ -121,7 +121,7 @@ namespace TurboTartine.ReparentScenePlugin
             }
 
             //PackedScene newParentScn = ResourceLoader.Load<PackedScene>(newParentTreeInfo.boundScenePath);           //Workaround https://github.com/godotengine/godot/issues/27243
-            PackedScene reparentedScn = newParentTreeInfo.boundScene.CreateInherited();
+            PackedScene reparentedScn = newParentTreeInfo.boundScene.CreateInherited(originScnTree.Name);
             string reparentedScenePath = pathNoExtention + "." + extention;
             Node reparentedScnTree = reparentedScn.Instantiate(PackedScene.GenEditState.MainInherited);
             foreach (SceneTreeInfo.NodeInfo childInfo in childSceneNodeInfos)
