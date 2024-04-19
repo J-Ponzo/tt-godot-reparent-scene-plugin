@@ -35,13 +35,16 @@ namespace TurboTartine.ReparentScenePlugin
 
         private bool IsPairValid(SceneTreeInfo.NodeInfo parentNodeInfo, SceneTreeInfo.NodeInfo reparentedNodeInfo)
         {
-            return reparentedNodeInfo != null && reparentedNodeInfo.type == parentNodeInfo.type && AreScriptCompatible(parentNodeInfo, reparentedNodeInfo);
+            bool isRoot = sceneTreeInfo.FindParentNodeInfo(parentNodeInfo) == null;
+            return reparentedNodeInfo != null && reparentedNodeInfo.type == parentNodeInfo.type && AreScriptCompatible(parentNodeInfo, reparentedNodeInfo, !isRoot);
         }
 
-        private bool AreScriptCompatible(SceneTreeInfo.NodeInfo parentNodeInfo, SceneTreeInfo.NodeInfo reparentedNodeInfo)
+        private bool AreScriptCompatible(SceneTreeInfo.NodeInfo parentNodeInfo, SceneTreeInfo.NodeInfo reparentedNodeInfo, bool strictly)
         {
             if (!parentNodeInfo.porperties.ContainsKey("script")
                 || !reparentedNodeInfo.porperties.ContainsKey("script")) return true;
+
+            if (strictly) return false;
 
             Script parentScript = (Script)parentNodeInfo.porperties["script"];
             Script reparentedScript = (Script)reparentedNodeInfo.porperties["script"];
