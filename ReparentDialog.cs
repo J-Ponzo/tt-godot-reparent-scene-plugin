@@ -67,6 +67,10 @@ namespace TurboTartine.ReparentScenePlugin
             originScnPathLineEdit.Text = path;
             originTreeInfo = new SceneTreeInfo(path);
             originTreeHandler = new ReparentedTreeHandler(originScnTree, originTreeInfo);
+
+            if (ProjectSettings.GetSetting(Plugin.PROJECT_SETTING_LOG_DEBUG_INFO).AsBool())
+                originTreeInfo.boundScene.PrintBundled();
+            
             UpdateAll();
         }
 
@@ -85,6 +89,10 @@ namespace TurboTartine.ReparentScenePlugin
             newParentScnPathLineEdit.Text = path;
             newParentTreeInfo = new SceneTreeInfo(path);
             newParentTreeHandler = new NewParentTreeHandler(newParentScnTree, newParentTreeInfo);
+
+            if (ProjectSettings.GetSetting(Plugin.PROJECT_SETTING_LOG_DEBUG_INFO).AsBool())
+                originTreeInfo.boundScene.PrintBundled();
+
             UpdateAll();
         }
 
@@ -126,7 +134,6 @@ namespace TurboTartine.ReparentScenePlugin
             PackedScene reparentedScn = newParentTreeInfo.boundScene.CreateInherited(originScnTree.Name);
             string reparentedScenePath = pathNoExtention + "." + extention;
             Node reparentedScnTree = reparentedScn.Instantiate(PackedScene.GenEditState.MainInherited);
-            SetupReparentedScriptFromOrigin(reparentedScnTree, originScnTree);
             foreach (SceneTreeInfo.NodeInfo childInfo in childSceneNodeInfos)
             {
                 Node childInOriginScene = originScnTree.GetNode(childInfo.path);
@@ -138,6 +145,7 @@ namespace TurboTartine.ReparentScenePlugin
                 parentInNewParentScene.AddChild(childInNewParentScene);
                 childInNewParentScene.Owner = reparentedScnTree;
             }
+            SetupReparentedScriptFromOrigin(reparentedScnTree, originScnTree);
             reparentedScn.Pack(reparentedScnTree);
             DirAccess.RemoveAbsolute(reparentedScenePath);                                      // Changes are not applied if we do not remove the file first
             ResourceSaver.Singleton.Save(reparentedScn, reparentedScenePath);
@@ -146,7 +154,15 @@ namespace TurboTartine.ReparentScenePlugin
         private void SetupReparentedScriptFromOrigin(Node reparentedScnTree, Node originScnTree)
         {
             Script originScript = (Script)originScnTree.GetScript();
-            if (originScript != null) reparentedScnTree.SetScript(originScript);
+            if (originScript != null)
+            {
+                reparentedScnTree.SetScript(originScript);
+                Script reparentScript = (Script)reparentedScnTree.GetScript();
+                foreach (Dictionary property in reparentedScnTree.GetPropertyList())
+                {
+                    reparentScript.Set(property["name"].AsStringName(), originScript.Get(property["name"].AsStringName()));
+                }
+            }
 
             foreach (Dictionary property in reparentedScnTree.GetPropertyList())
             {

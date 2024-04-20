@@ -68,6 +68,9 @@ namespace TurboTartine.ReparentScenePlugin
         {
             originalScnPathLineEdit.Text = path;
             InitFromPath(path);
+
+            if (ProjectSettings.GetSetting(Plugin.PROJECT_SETTING_LOG_DEBUG_INFO).AsBool())
+                treeInfo.boundScene.PrintBundled();
         }
 
         private void OnItemSelected()

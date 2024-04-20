@@ -14,6 +14,7 @@ namespace TurboTartine.ReparentScenePlugin
         public const string REPARENT_MENU_ITEM_NAME = "Reparent";
 
         public const string PROJECT_SETTING_DEFAULT_BACKUP_ORIGINAL = "tt_reparent_utils/settings/common/default_backup_original_scene";
+        public const string PROJECT_SETTING_LOG_DEBUG_INFO = "tt_reparent_utils/settings/debug/log_debug_info";
 
         private PopupMenu pluginMenu;
 
@@ -27,6 +28,7 @@ namespace TurboTartine.ReparentScenePlugin
             AddToolSubmenuItem(TOOL_MENU_ITEM_NAME, pluginMenu);
 
             AddCustomProjectSettings(PROJECT_SETTING_DEFAULT_BACKUP_ORIGINAL, true);
+            AddCustomProjectSettings(PROJECT_SETTING_LOG_DEBUG_INFO, true);
         }
 
         private void OnPluginMenuItemPressed(long id)
