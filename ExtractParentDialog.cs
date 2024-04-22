@@ -30,6 +30,8 @@ namespace TurboTartine.ReparentScenePlugin
         public override void _EnterTree()
         {
             base._EnterTree();
+            EditorInterface.Singleton.GetResourceFilesystem().Scan();
+
             this.Title = Plugin.EXTRACT_PARENT_MENU_ITEM_NAME;
             this.Confirmed += ExtractParent;
 
@@ -131,6 +133,8 @@ namespace TurboTartine.ReparentScenePlugin
             childPackedScn.Pack(childScnTree);
             DirAccess.RemoveAbsolute(childScenePath);                                      // Changes are not applied if we do not remove the file first
             ResourceSaver.Singleton.Save(childPackedScn, childScenePath);
+
+            EditorInterface.Singleton.GetResourceFilesystem().Scan();
         }
     }
 }

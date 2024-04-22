@@ -28,6 +28,8 @@ namespace TurboTartine.ReparentScenePlugin
         public override void _EnterTree()
         {
             base._EnterTree();
+            EditorInterface.Singleton.GetResourceFilesystem().Scan();
+
             this.Title = Plugin.REPARENT_MENU_ITEM_NAME;
             this.Confirmed += Reparent;
 
@@ -145,40 +147,33 @@ namespace TurboTartine.ReparentScenePlugin
                 parentInNewParentScene.AddChild(childInNewParentScene);
                 childInNewParentScene.Owner = reparentedScnTree;
             }
+
             SetupReparentedScriptFromOrigin(reparentedScnTree, originScnTree);
+            
             reparentedScn.Pack(reparentedScnTree);
             DirAccess.RemoveAbsolute(reparentedScenePath);                                      // Changes are not applied if we do not remove the file first
             ResourceSaver.Singleton.Save(reparentedScn, reparentedScenePath);
+
+            EditorInterface.Singleton.GetResourceFilesystem().Scan();
         }
 
         private void SetupReparentedScriptFromOrigin(Node reparentedScnTree, Node originScnTree)
         {
-            Script originScript = (Script)originScnTree.GetScript();
-            if (originScript != null)
-            {
-                reparentedScnTree.SetScript(originScript);
-                Script reparentScript = (Script)reparentedScnTree.GetScript();
-                foreach (Dictionary property in reparentedScnTree.GetPropertyList())
-                {
-                    reparentScript.Set(property["name"].AsStringName(), originScript.Get(property["name"].AsStringName()));
-                }
-            }
-
-            foreach (Dictionary property in reparentedScnTree.GetPropertyList())
+            foreach (Dictionary property in originScnTree.GetPropertyList())
             {
                 if (property["type"].AsInt32() == (int)Variant.Type.Object)
                 {
-                    GodotObject godotObject = originScnTree.Get(property["name"].AsStringName()).AsGodotObject();
+                    GodotObject godotObject = originScnTree.Get(property["name"].AsString()).AsGodotObject();
                     if (godotObject is Node)
                     {
                         Node nodeFromOrigin = (Node)godotObject;
                         Node reparentedCounterpart = reparentedScnTree.GetNode(originScnTree.GetPathTo(nodeFromOrigin));
-                        reparentedScnTree.Set(property["name"].AsStringName(), reparentedCounterpart);
+                        reparentedScnTree.Set(property["name"].AsString(), reparentedCounterpart);
                         continue;
                     }
                 }
 
-                reparentedScnTree.Set(property["name"].AsStringName(), originScnTree.Get(property["name"].AsStringName()));
+                reparentedScnTree.Set(property["name"].AsString(), originScnTree.Get(property["name"].AsString()));
             }
         }
     }
