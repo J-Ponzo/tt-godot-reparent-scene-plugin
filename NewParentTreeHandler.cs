@@ -1,6 +1,7 @@
 using Godot;
 using Microsoft.VisualBasic;
 using System;
+using System.Diagnostics;
 
 namespace TurboTartine.ReparentScenePlugin
 {
@@ -44,11 +45,11 @@ namespace TurboTartine.ReparentScenePlugin
             if (!parentNodeInfo.porperties.ContainsKey("script")
                 || !reparentedNodeInfo.porperties.ContainsKey("script")) return true;
 
-            if (strictly) return false;
-
             Script parentScript = (Script)parentNodeInfo.porperties["script"];
             Script reparentedScript = (Script)reparentedNodeInfo.porperties["script"];
-            
+
+            if (strictly) return reparentedScript == parentScript;
+
             Script script = reparentedScript;
             do
             {
