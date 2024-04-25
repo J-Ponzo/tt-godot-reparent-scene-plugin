@@ -149,12 +149,38 @@ namespace TurboTartine.ReparentScenePlugin
             }
 
             SetupReparentedScriptFromOrigin(reparentedScnTree, originScnTree);
-            
+            SetupConnsFromOrigin(reparentedScnTree, originTreeInfo, originScnTree);
+
             reparentedScn.Pack(reparentedScnTree);
+
             DirAccess.RemoveAbsolute(reparentedScenePath);                                      // Changes are not applied if we do not remove the file first
             ResourceSaver.Singleton.Save(reparentedScn, reparentedScenePath);
 
             EditorInterface.Singleton.GetResourceFilesystem().Scan();
+        }
+
+        private void SetupConnsFromOrigin(Node reparentedScnTree, SceneTreeInfo originScnTreeInfo, Node originScnTree)
+        {
+            foreach (SceneTreeInfo.NodeInfo nodeInfo in originScnTreeInfo.nodeInfos)
+            {
+                Node srcFromOrigin = originScnTree.GetNode(nodeInfo.path);
+                foreach (Dictionary signal in srcFromOrigin.GetSignalList())
+                {
+                    foreach (Dictionary conn in srcFromOrigin.GetSignalConnectionList(signal["name"].AsStringName()))
+                    {
+                        Signal originSignal = conn["signal"].AsSignal();
+                        Node reparentSrcCounterpart = reparentedScnTree.GetNode(originScnTree.GetPathTo(srcFromOrigin));
+
+                        Callable originCallable = conn["callable"].AsCallable();
+                        Node trgFromOrigin = (Node)originCallable.Target;
+                        Node reparentTrgCounterpart = reparentedScnTree.GetNode(originScnTree.GetPathTo(trgFromOrigin));
+                        Callable reparentCallable = new Callable(reparentTrgCounterpart, originCallable.Method);
+
+                        uint flags = conn["flags"].AsUInt32();
+                        reparentSrcCounterpart.Connect(originSignal.Name, reparentCallable, flags);
+                    }
+                }
+            }
         }
 
         private void SetupReparentedScriptFromOrigin(Node reparentedScnTree, Node originScnTree)
