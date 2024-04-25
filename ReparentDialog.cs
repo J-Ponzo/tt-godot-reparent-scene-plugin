@@ -128,7 +128,7 @@ namespace TurboTartine.ReparentScenePlugin
             List<SceneTreeInfo.NodeInfo> childSceneNodeInfos = new List<SceneTreeInfo.NodeInfo>();
             foreach (SceneTreeInfo.NodeInfo nodeInfo in originTreeInfo.nodeInfos)
             {
-                if (!newParentTreeInfo.nodeInfos.Exists(n => n.path == nodeInfo.path))
+                if (nodeInfo.ownerPath != "" && !newParentTreeInfo.nodeInfos.Exists(n => n.path == nodeInfo.path))             // It seems n.ownerPath = "" means the node is in an instance but appears if editable children is checketed in the editor
                     childSceneNodeInfos.Add(nodeInfo);
             }
 
