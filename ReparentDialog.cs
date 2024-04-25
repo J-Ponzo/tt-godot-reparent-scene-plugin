@@ -107,7 +107,7 @@ namespace TurboTartine.ReparentScenePlugin
 
         private void UpdateOkButton()
         {
-            GetOkButton().Disabled = !(newParentTreeHandler != null && newParentTreeHandler.IsValidParent());
+            GetOkButton().Disabled = !(newParentTreeHandler != null && originTreeHandler.IsValidOrigin() && newParentTreeHandler.IsValidParent());
         }
 
         private void Reparent()
